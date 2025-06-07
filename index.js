@@ -306,6 +306,7 @@ class EYE extends HTMLElement {
           { x: 1, y: 1, factor: 1/8 },    // Bottom-right
           { x: 0, y: 2, factor: 1/8 }     // Bottom + 1
         ],
+        // Burkes (1988) - Distributes error more widely, reduces artifacts
         'burkes': [
           { x: 1, y: 0, factor: 8/32 },   // Right
           { x: 2, y: 0, factor: 4/32 },   // Right + 1
@@ -315,6 +316,7 @@ class EYE extends HTMLElement {
           { x: 1, y: 1, factor: 4/32 },   // Bottom-right
           { x: 2, y: 1, factor: 2/32 }    // Bottom-right-right
         ],
+        // Sierra (1990) - More complex pattern, good for detailed images
         'sierra': [
           { x: 1, y: 0, factor: 5/32 },   // Right
           { x: 2, y: 0, factor: 3/32 },   // Right + 1
@@ -327,6 +329,7 @@ class EYE extends HTMLElement {
           { x: 0, y: 2, factor: 3/32 },   // Bottom-bottom
           { x: 1, y: 2, factor: 2/32 }    // Bottom-bottom-right
         ],
+        // Stucki (1981) - Higher quality with more error diffusion points
         'stucki': [
           { x: 1, y: 0, factor: 8/42 },   // Right
           { x: 2, y: 0, factor: 4/42 },   // Right + 1
@@ -341,6 +344,7 @@ class EYE extends HTMLElement {
           { x: 1, y: 2, factor: 2/42 },   // Bottom-bottom-right
           { x: 2, y: 2, factor: 1/42 }    // Bottom-bottom-right-right
         ],
+        // Jarvis-Judice-Ninke (1976) - Most complex, highest quality but slower  
         'jarvis': [
           { x: 1, y: 0, factor: 7/48 },   // Right
           { x: 2, y: 0, factor: 5/48 },   // Right + 1
@@ -357,32 +361,36 @@ class EYE extends HTMLElement {
         ]
       };
 
+      // Select diffusion matrix for the chosen algorithm (fallback to Floyd-Steinberg)
       const matrix = diffusionMatrices[method] || diffusionMatrices['floyd-steinberg'];
 
+      // Process pixels from top-left to bottom-right for proper error propagation
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
           const idx = (y * width + x) * 4;
           const oldPixel = [data[idx], data[idx + 1], data[idx + 2]];
           const newPixel = this.findClosestColor(oldPixel, palette);
           
-          // Set new pixel color
+          // Replace pixel with nearest palette color
           data[idx] = newPixel[0];     // R
           data[idx + 1] = newPixel[1]; // G
           data[idx + 2] = newPixel[2]; // B
-          // Alpha stays the same
+          // Alpha channel remains unchanged
           
-          // Calculate error
+          // Calculate quantization error for each color channel
           const errorR = oldPixel[0] - newPixel[0];
           const errorG = oldPixel[1] - newPixel[1];  
           const errorB = oldPixel[2] - newPixel[2];
           
-          // Distribute error using the selected algorithm's matrix
+          // Distribute error to neighboring pixels according to algorithm's matrix
           matrix.forEach(({ x: dx, y: dy, factor }) => {
             const x2 = x + dx;
             const y2 = y + dy;
             
+            // Only distribute to pixels within image bounds
             if (x2 >= 0 && x2 < width && y2 >= 0 && y2 < height) {
               const idx2 = (y2 * width + x2) * 4;
+              // Add weighted error, clamping to valid RGB range [0, 255]
               data[idx2] = Math.max(0, Math.min(255, data[idx2] + errorR * factor));
               data[idx2 + 1] = Math.max(0, Math.min(255, data[idx2 + 1] + errorG * factor));
               data[idx2 + 2] = Math.max(0, Math.min(255, data[idx2 + 2] + errorB * factor));
@@ -394,6 +402,14 @@ class EYE extends HTMLElement {
       return imageData;
     }
   
+    // =============================================================================
+    // UI CREATION METHODS
+    // =============================================================================
+    
+    /**
+     * Creates the main collapsible menu interface
+     * Uses HTML5 details/summary elements for accessible dropdown functionality
+     */
     createMenu(){
       const menu_container = document.createElement('details');
       const summary = document.createElement('summary');
@@ -1102,21 +1118,29 @@ class EYE extends HTMLElement {
       this.openEYE();
     }
   
-      connectedCallback(){
-    // Set initial values from attributes
-    this.contrast = parseInt(this.getAttribute('contrast')) || 100;
-    this.saturation = parseInt(this.getAttribute('saturation')) || 100;
-    this.brightness = parseInt(this.getAttribute('brightness')) || 100;
-    this.hue = parseInt(this.getAttribute('hue')) || 0;
-    this.color1 = this.getAttribute('color-1') || 'black';
-    this.color2 = this.getAttribute('color-2') || 'orange';
-    this.color3 = this.getAttribute('color-3') || 'blue';
-    this.color4 = this.getAttribute('color-4') || 'pink';
-    this.color5 = this.getAttribute('color-5') || 'red';
-    this.dither_method = this.getAttribute('dither-method') || 'floyd-steinberg';
+          // =============================================================================
+    // WEB COMPONENT LIFECYCLE METHODS
+    // =============================================================================
     
-    this.render();
-  }
+    /**
+     * Called when the element is connected to the DOM
+     * Initializes all properties from HTML attributes and renders the initial UI
+     */
+    connectedCallback(){
+      // Set initial values from HTML attributes with sensible defaults
+      this.contrast = parseInt(this.getAttribute('contrast')) || 100;
+      this.saturation = parseInt(this.getAttribute('saturation')) || 100;
+      this.brightness = parseInt(this.getAttribute('brightness')) || 100;
+      this.hue = parseInt(this.getAttribute('hue')) || 0;
+      this.color1 = this.getAttribute('color-1') || 'black';
+      this.color2 = this.getAttribute('color-2') || 'orange';
+      this.color3 = this.getAttribute('color-3') || 'blue';
+      this.color4 = this.getAttribute('color-4') || 'pink';
+      this.color5 = this.getAttribute('color-5') || 'red';
+      this.dither_method = this.getAttribute('dither-method') || 'floyd-steinberg';
+      
+      this.render();
+    }
   
     stopVideoStream(){
       if (this.video && this.video.srcObject) {
@@ -1126,59 +1150,89 @@ class EYE extends HTMLElement {
       }
     }
   
+        /**
+     * Called when the element is disconnected from the DOM
+     * Properly cleans up media streams and polling to prevent memory leaks
+     */
     disconnectedCallback(){
-      // Stop video polling
+      // Stop video polling loop
       this.pauseVideoPoll();
-      // Stop the media tracks
+      // Release camera resources
       this.stopVideoStream();
     }
-  
-      static get observedAttributes() {
-    return ['contrast', 'saturation', 'brightness', 'hue', 'color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'dither-method'];
-  }
 
-  attributeChangedCallback(name, old_value, new_value){
-    switch(name){
-      case 'contrast':
-        this.contrast = parseInt(new_value) || 100;
-        if (this.contrast_slider) this.contrast_slider.value = this.contrast;
-        break;
-      case 'saturation':
-        this.saturation = parseInt(new_value) || 100;
-        if (this.saturation_slider) this.saturation_slider.value = this.saturation;
-        break;
-      case 'brightness':
-        this.brightness = parseInt(new_value) || 100;
-        if (this.brightness_slider) this.brightness_slider.value = this.brightness;
-        break;
-      case 'hue':
-        this.hue = parseInt(new_value) || 0;
-        if (this.hue_slider) this.hue_slider.value = this.hue;
-        break;
-      case 'color-1':
-        this.color1 = new_value || 'black';
-        break;
-      case 'color-2':
-        this.color2 = new_value || 'orange';
-        break;
-      case 'color-3':
-        this.color3 = new_value || 'blue';
-        break;
-      case 'color-4':
-        this.color4 = new_value || 'pink';
-        break;
-      case 'color-5':
-        this.color5 = new_value || 'red';
-        break;
-      case 'dither-method':
-        this.dither_method = new_value || 'floyd-steinberg';
-        if (this.dither_select) this.dither_select.value = this.dither_method;
-        break;
-      default:
+    /**
+     * Defines which HTML attributes should trigger attributeChangedCallback
+     * @returns {string[]} Array of attribute names to observe
+     */
+    static get observedAttributes() {
+      return ['contrast', 'saturation', 'brightness', 'hue', 'color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'dither-method'];
+    }
+
+    /**
+     * Called when any observed attribute changes
+     * Updates internal properties and syncs UI controls when attributes change
+     * 
+     * @param {string} name - Name of the changed attribute
+     * @param {string} old_value - Previous attribute value
+     * @param {string} new_value - New attribute value
+     */
+    attributeChangedCallback(name, old_value, new_value){
+      switch(name){
+        case 'contrast':
+          this.contrast = parseInt(new_value) || 100;
+          if (this.contrast_slider) this.contrast_slider.value = this.contrast;
+          break;
+        case 'saturation':
+          this.saturation = parseInt(new_value) || 100;
+          if (this.saturation_slider) this.saturation_slider.value = this.saturation;
+          break;
+        case 'brightness':
+          this.brightness = parseInt(new_value) || 100;
+          if (this.brightness_slider) this.brightness_slider.value = this.brightness;
+          break;
+        case 'hue':
+          this.hue = parseInt(new_value) || 0;
+          if (this.hue_slider) this.hue_slider.value = this.hue;
+          break;
+        case 'color-1':
+          this.color1 = new_value || 'black';
+          break;
+        case 'color-2':
+          this.color2 = new_value || 'orange';
+          break;
+        case 'color-3':
+          this.color3 = new_value || 'blue';
+          break;
+        case 'color-4':
+          this.color4 = new_value || 'pink';
+          break;
+        case 'color-5':
+          this.color5 = new_value || 'red';
+          break;
+        case 'dither-method':
+          this.dither_method = new_value || 'floyd-steinberg';
+          if (this.dither_select) this.dither_select.value = this.dither_method;
+          break;
+        default:
+          // Unhandled attribute - could log warning in debug mode
+      }
     }
   }
-  }
   
+  // =============================================================================
+  // COMPONENT REGISTRATION
+  // =============================================================================
+  
+  /**
+   * Register the EYE component with the browser's custom element registry
+   * This enables usage of <e-y-e> tags in HTML
+   * 
+   * The tag name 'e-y-e' follows custom element naming conventions:
+   * - Must contain a hyphen
+   * - Should be descriptive of component function
+   * - 'EYE' represents the camera/vision aspect of the component
+   */
   customElements.define('e-y-e', EYE);
   
   

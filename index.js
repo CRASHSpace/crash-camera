@@ -505,6 +505,7 @@ class EYE extends HTMLElement {
   
         createBottomDitherSelector(container){
       const dither_wrapper = document.createElement('div');
+      dither_wrapper.classList.add('dither-selector');
       dither_wrapper.style.cssText = `
         background: rgba(0, 0, 0, 0.8);
         padding: 10px;
@@ -512,21 +513,28 @@ class EYE extends HTMLElement {
         color: white;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
+        white-space: nowrap;
       `;
       
       const dither_label = document.createElement('label');
-      dither_label.innerText = 'Dithering: ';
-      dither_label.style.cssText = 'margin: 0; font-size: 14px;';
+      dither_label.innerText = 'Dithering:';
+      dither_label.style.cssText = `
+        margin: 0;
+        font-size: 14px;
+        flex-shrink: 0;
+      `;
       
       const dither_select = document.createElement('select');
       dither_select.style.cssText = `
-        padding: 5px;
+        padding: 5px 8px;
         border-radius: 3px;
         border: none;
         background: white;
         color: black;
         font-size: 14px;
+        min-width: 120px;
+        flex-shrink: 1;
       `;
       
       const dither_options = [
@@ -595,8 +603,67 @@ class EYE extends HTMLElement {
       this.menu.appendChild(take_picture_label);
     }
 
+    addBottomControlsCSS(){
+      // Check if we already added the CSS to avoid duplicates
+      if (document.getElementById('bottom-controls-css')) return;
+      
+      const style = document.createElement('style');
+      style.id = 'bottom-controls-css';
+      style.textContent = `
+        .bottom-controls {
+          /* Base styles already set inline */
+        }
+        
+        .bottom-controls > div,
+        .bottom-controls > button {
+          flex-shrink: 0;
+          min-width: fit-content;
+        }
+        
+        /* Mobile and narrow screen adjustments */
+        @media (max-width: 768px) {
+          .bottom-controls {
+            flex-direction: column !important;
+            gap: 12px !important;
+            padding: 15px !important;
+            max-width: 95vw !important;
+          }
+          
+          .bottom-controls > div {
+            width: 100%;
+            max-width: 280px;
+          }
+          
+          .bottom-controls select {
+            width: 100% !important;
+            min-width: 120px !important;
+          }
+          
+          .export-layers-button {
+            width: 100% !important;
+            max-width: 280px !important;
+          }
+        }
+        
+        /* Very narrow screens */
+        @media (max-width: 480px) {
+          .bottom-controls {
+            gap: 10px !important;
+            padding: 12px !important;
+          }
+          
+          .bottom-controls > div {
+            max-width: 250px;
+          }
+        }
+      `;
+      
+      document.head.appendChild(style);
+    }
+
     createBottomControls(){
       const bottom_container = document.createElement('div');
+      bottom_container.classList.add('bottom-controls');
       bottom_container.style.cssText = `
         position: fixed;
         bottom: 20px;
@@ -604,10 +671,17 @@ class EYE extends HTMLElement {
         transform: translateX(-50%);
         display: flex;
         flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
         align-items: center;
         gap: 15px;
         z-index: 1000;
+        max-width: 90vw;
+        padding: 10px;
       `;
+
+      // Add responsive CSS
+      this.addBottomControlsCSS();
 
       // Camera select dropdown
       this.createBottomDeviceDropdown(bottom_container);
@@ -623,22 +697,36 @@ class EYE extends HTMLElement {
 
     async createBottomDeviceDropdown(container){
       const selection_wrapper = document.createElement('div');
+      selection_wrapper.classList.add('camera-selector');
       selection_wrapper.style.cssText = `
         background: rgba(0, 0, 0, 0.8);
         padding: 10px;
         border-radius: 5px;
         color: white;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
       `;
       
       const selection_label = document.createElement('label');
-      selection_label.innerText = 'Camera: ';
-      selection_label.style.cssText = 'margin-right: 10px;';
+      selection_label.innerText = 'Camera:';
+      selection_label.style.cssText = `
+        margin: 0;
+        font-size: 14px;
+        flex-shrink: 0;
+      `;
       
       const video_inputs = document.createElement('select');
       video_inputs.style.cssText = `
-        padding: 5px;
+        padding: 5px 8px;
         border-radius: 3px;
         border: none;
+        background: white;
+        color: black;
+        font-size: 14px;
+        min-width: 100px;
+        flex-shrink: 1;
       `;
       
       // Store reference for later updates

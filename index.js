@@ -93,41 +93,13 @@ class EYE extends HTMLElement {
      * Creates a "Connect" button that initializes the camera interface when clicked
      */
     render() {
-      const container = document.createElement('div');
-      container.style.cssText = `
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        text-align: center;
-        z-index: 1000;
-      `;
-
-      const title = document.createElement('h1');
-      title.innerText = 'CrashCamera';
-      title.style.cssText = `
-        text-align: center;
-        margin: 0 0 30px 0;
-        padding-bottom: 60px;
-        font-size: 3rem;
-        font-weight: 800;
-        color: #ff6b35;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-        letter-spacing: -0.5px;
-        -webkit-text-stroke: 1px rgba(0,0,0,0.1);
-        text-stroke: 1px rgba(0,0,0,0.1);
-      `;
-      container.appendChild(title);
-
       const initialize_button = document.createElement('button');
       initialize_button.classList.add('initialize-button')
       initialize_button.innerText = 'Connect';
       initialize_button.addEventListener('click', (e) => {
         this.openEYE();
       });
-      container.appendChild(initialize_button);
-      
-      this.appendChild(container);
+      this.appendChild(initialize_button);
     }
   
     // =============================================================================
@@ -257,8 +229,6 @@ class EYE extends HTMLElement {
       // Route to appropriate dithering algorithm
       if (this.dither_method === 'threshold') {
         return this.applyThresholdDithering(imageData, palette);
-      } else if (this.dither_method.startsWith('halftone-')) {
-        return this.applyHalftoneDithering(imageData, palette, this.dither_method);
       } else {
         return this.applyErrorDiffusionDithering(imageData, palette, this.dither_method);
       }
@@ -431,117 +401,6 @@ class EYE extends HTMLElement {
       
       return imageData;
     }
-
-    /**
-     * Halftone dithering algorithms that simulate traditional halftone patterns
-     * 
-     * Halftone dithering creates patterns using dots, lines, or circles to represent
-     * different levels of gray/color intensity. These patterns mimic traditional
-     * offset printing techniques and create distinctive visual effects.
-     * 
-     * @param {ImageData} imageData - Source image data to process
-     * @param {number[][]} palette - Array of RGB color arrays to quantize to
-     * @param {string} method - Halftone type (halftone-dots, halftone-lines, halftone-circles)
-     * @returns {ImageData} Processed image data with halftone patterns
-     */
-    applyHalftoneDithering(imageData, palette, method) {
-      const data = imageData.data;
-      const width = imageData.width;
-      const height = imageData.height;
-      
-      // Halftone parameters
-      const cellSize = 6; // Size of each halftone cell in pixels
-      const frequency = Math.PI * 2 / cellSize; // Frequency for pattern generation
-      
-      // Create a new image data for the output
-      const outputImageData = new ImageData(width, height);
-      const outputData = outputImageData.data;
-      
-      // Process image in blocks
-      for (let y = 0; y < height; y += cellSize) {
-        for (let x = 0; x < width; x += cellSize) {
-          
-          // Calculate average color for this cell
-          let avgR = 0, avgG = 0, avgB = 0;
-          let pixelCount = 0;
-          
-          for (let dy = 0; dy < cellSize && y + dy < height; dy++) {
-            for (let dx = 0; dx < cellSize && x + dx < width; dx++) {
-              const idx = ((y + dy) * width + (x + dx)) * 4;
-              avgR += data[idx];
-              avgG += data[idx + 1];
-              avgB += data[idx + 2];
-              pixelCount++;
-            }
-          }
-          
-          avgR = Math.round(avgR / pixelCount);
-          avgG = Math.round(avgG / pixelCount);
-          avgB = Math.round(avgB / pixelCount);
-          
-          // Find closest palette color and calculate intensity
-          const closestColor = this.findClosestColor([avgR, avgG, avgB], palette);
-          const isWhite = closestColor[0] === 255 && closestColor[1] === 255 && closestColor[2] === 255;
-          
-          // Calculate luminance to determine pattern intensity
-          const luminance = (avgR * 0.299 + avgG * 0.587 + avgB * 0.114) / 255;
-          const intensity = 1 - luminance; // Invert so darker areas have more pattern
-          
-          // Apply halftone pattern to this cell
-          for (let dy = 0; dy < cellSize && y + dy < height; dy++) {
-            for (let dx = 0; dx < cellSize && x + dx < width; dx++) {
-              const idx = ((y + dy) * width + (x + dx)) * 4;
-              let shouldInk = false;
-              
-              // Calculate pattern based on method
-              if (method === 'halftone-dots') {
-                // Circular dot pattern
-                const centerX = cellSize / 2;
-                const centerY = cellSize / 2;
-                const distance = Math.sqrt(Math.pow(dx - centerX, 2) + Math.pow(dy - centerY, 2));
-                const maxDistance = cellSize / 2;
-                const threshold = intensity * maxDistance;
-                shouldInk = distance <= threshold;
-                
-              } else if (method === 'halftone-lines') {
-                // Diagonal line pattern
-                const linePos = (dx + dy) % cellSize;
-                const threshold = intensity * cellSize;
-                shouldInk = linePos < threshold;
-                
-              } else if (method === 'halftone-circles') {
-                // Concentric circle pattern
-                const centerX = cellSize / 2;
-                const centerY = cellSize / 2;
-                const distance = Math.sqrt(Math.pow(dx - centerX, 2) + Math.pow(dy - centerY, 2));
-                const wave = Math.sin(distance * frequency);
-                const threshold = (intensity - 0.5) * 2; // Range from -1 to 1
-                shouldInk = wave > threshold;
-              }
-              
-              // Apply the pattern - use closest color if should ink, otherwise white
-              if (shouldInk && !isWhite) {
-                outputData[idx] = closestColor[0];
-                outputData[idx + 1] = closestColor[1];
-                outputData[idx + 2] = closestColor[2];
-              } else {
-                outputData[idx] = 255; // White
-                outputData[idx + 1] = 255;
-                outputData[idx + 2] = 255;
-              }
-              outputData[idx + 3] = 255; // Alpha
-            }
-          }
-        }
-      }
-      
-      // Copy the output data back to original imageData
-      for (let i = 0; i < data.length; i++) {
-        data[i] = outputData[i];
-      }
-      
-      return imageData;
-    }
   
     // =============================================================================
     // UI CREATION METHODS
@@ -677,10 +536,7 @@ class EYE extends HTMLElement {
         { value: 'sierra', label: 'Sierra' },
         { value: 'stucki', label: 'Stucki' },
         { value: 'jarvis', label: 'Jarvis-Judice-Ninke' },
-        { value: 'threshold', label: 'Simple Threshold' },
-        { value: 'halftone-dots', label: 'Halftone Dots' },
-        { value: 'halftone-lines', label: 'Halftone Lines' },
-        { value: 'halftone-circles', label: 'Halftone Circles' }
+        { value: 'threshold', label: 'Simple Threshold' }
       ];
       
       dither_options.forEach(option => {

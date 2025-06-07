@@ -93,13 +93,41 @@ class EYE extends HTMLElement {
      * Creates a "Connect" button that initializes the camera interface when clicked
      */
     render() {
+      const container = document.createElement('div');
+      container.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        z-index: 1000;
+      `;
+
+      const title = document.createElement('h1');
+      title.innerText = 'CrashCamera';
+      title.style.cssText = `
+        text-align: center;
+        margin: 0 0 30px 0;
+        padding-bottom: 60px;
+        font-size: 3rem;
+        font-weight: 800;
+        color: #ff6b35;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        letter-spacing: -0.5px;
+        -webkit-text-stroke: 1px rgba(0,0,0,0.1);
+        text-stroke: 1px rgba(0,0,0,0.1);
+      `;
+      container.appendChild(title);
+
       const initialize_button = document.createElement('button');
       initialize_button.classList.add('initialize-button')
       initialize_button.innerText = 'Connect';
       initialize_button.addEventListener('click', (e) => {
         this.openEYE();
       });
-      this.appendChild(initialize_button);
+      container.appendChild(initialize_button);
+      
+      this.appendChild(container);
     }
   
     // =============================================================================

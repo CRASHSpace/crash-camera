@@ -8,6 +8,9 @@ body {
   font-family: var(--font-family);
   margin: 0;
   padding: 0;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* EYE Component styles */
@@ -28,27 +31,38 @@ e-y-e canvas {
 /* Button styles */
 .initialize-button,
 .take-picture-button {
-  background-color: var(--overlay-background);
+  background-color: var(--accent-color);
   color: var(--text-color);
-  border: 1px solid var(--border-color);
-  padding: var(--padding-standard);
+  border: 2px solid var(--accent-color);
+  padding: 1rem 2rem;
   font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: background-color var(--transition-speed);
+  border-radius: 6px;
+  transition: all var(--transition-speed) ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.2);
 }
 
 .initialize-button:hover,
 .take-picture-button:hover {
-  background-color: var(--text-color);
-  color: var(--background-color);
+  background-color: var(--hover-color);
+  border-color: var(--hover-color);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.3);
 }
 
 /* Menu styles */
 .menu {
   background-color: var(--overlay-background);
   border: 1px solid var(--border-color);
+  border-radius: 8px;
   padding: var(--padding-standard);
   margin-top: var(--margin-standard);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .menu section {
@@ -61,20 +75,39 @@ e-y-e canvas {
 .menu label {
   display: block;
   margin-bottom: var(--spacing-unit);
+  font-weight: 500;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .menu input[type="range"],
 .menu select {
   width: 100%;
-  background-color: var(--overlay-background);
+  background-color: var(--background-color);
   color: var(--text-color);
-  border: 1px solid var(--border-color);
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
   padding: calc(var(--padding-standard) * 0.5);
   font-family: var(--font-family);
+  transition: border-color var(--transition-speed);
+}
+
+.menu input[type="range"]:hover,
+.menu select:hover {
+  border-color: var(--accent-color);
+}
+
+.menu input[type="range"]:focus,
+.menu select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
 .menu input[type="checkbox"] {
   margin-right: var(--spacing-unit);
+  accent-color: var(--accent-color);
 }
 
 /* Details/summary styles */
